@@ -7,6 +7,15 @@ DOMAIN = "drivepulse"
 CONF_LOCAL_ONLY = "local_only"
 DEFAULT_LOCAL_ONLY = True
 
+CONF_MODE = "mode"
+MODE_WEBHOOK = "webhook"
+MODE_AZURE = "azure"
+CONF_API_URL = "api_url"
+CONF_READ_TOKEN = "read_token"
+CONF_VEHICLE = "vehicle"
+CONF_SCAN_INTERVAL = "scan_interval"
+DEFAULT_SCAN_INTERVAL = 30
+
 EVENT_TRIP_START = "drivepulse_trip_start"
 EVENT_TRIP_END = "drivepulse_trip_end"
 

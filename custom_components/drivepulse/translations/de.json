@@ -3,24 +3,81 @@
     "step": {
       "user": {
         "title": "DrivePulse hinzufügen",
-        "description": "Das erzeugt eine private Adresse (einen Webhook), an die die DrivePulse-App die Fahrzeugdaten sendet. Kein Konto, keine Cloud: Die Daten bleiben in Ihrem Home Assistant. Wählen Sie „Absenden“ und fügen Sie die Adresse dann in der App ein."
+        "description": "Wähle direkten Webhook oder Azure-Synchronisierung. Bestehende Webhook-Einträge funktionieren weiterhin.",
+        "data": {
+          "mode": "Betriebsmodus"
+        }
+      },
+      "azure": {
+        "title": "Azure-Synchronisierung",
+        "description": "Vollständige HTTPS-API-Adresse und Lesetoken eingeben. Die Fahrzeugpartition ist normalerweise default. Der Fahrzeugname kommt aus der App.",
+        "data": {
+          "api_url": "Azure API-Adresse",
+          "read_token": "Lesetoken",
+          "vehicle": "Fahrzeugpartition",
+          "scan_interval": "Abfrageintervall (Sekunden)"
+        },
+        "data_description": {
+          "read_token": "Nur den Lesetoken verwenden, nicht den Schreibtoken."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Azure-Synchronisierung",
+        "description": "Bitte den neuen Lesetoken eingeben.",
+        "data": {
+          "api_url": "Azure API-Adresse",
+          "read_token": "Lesetoken",
+          "vehicle": "Fahrzeugpartition",
+          "scan_interval": "Abfrageintervall (Sekunden)"
+        },
+        "data_description": {
+          "read_token": "Nur den Lesetoken verwenden, nicht den Schreibtoken."
+        }
       }
     },
     "create_entry": {
-      "default": "DrivePulse ist bereit. Öffnen Sie in der App „An Home Assistant senden“, fügen Sie diese Adresse bei „Webhook-Adresse“ ein und tippen Sie auf „Testsendung“:\n\n{webhook_url}\n\nUnterwegs nutzen Sie die HTTPS-Adresse Ihres Home Assistant (z. B. Nabu Casa) oder ein VPN und schalten Sie in den Integrationsoptionen „Nur lokales Netzwerk“ aus."
+      "default": "DrivePulse ist bereit. Öffnen Sie in der App „An Home Assistant senden“, fügen Sie diese Adresse bei „Webhook-Adresse“ ein und tippen Sie auf „Testsendung“:\n\n{webhook_url}\n\nUnterwegs nutzen Sie die HTTPS-Adresse Ihres Home Assistant (z. B. Nabu Casa) oder ein VPN und schalten Sie in den Integrationsoptionen „Nur lokales Netzwerk“ aus.",
+      "azure": "Azure-Synchronisierung eingerichtet. Home Assistant fragt neue Daten automatisch ab. Die App sendet weiter an Azure. Eine reine Testsendung legt kein Fahrzeug an."
+    },
+    "error": {
+      "invalid_url": "Eine HTTPS-API-Adresse ohne Zugangsdaten oder Query-Parameter eingeben.",
+      "invalid_auth": "Lesetoken ungültig oder vom Server abgewiesen.",
+      "cannot_connect": "API nicht erreichbar oder Antwort ungültig."
+    },
+    "abort": {
+      "reauth_successful": "Lesetoken aktualisiert."
     }
   },
   "options": {
     "step": {
       "init": {
-        "description": "Adresse für die DrivePulse-App („An Home Assistant senden“):\n\n{webhook_url}",
+        "description": "Betriebsmodus auswählen. Direkte Webhook-Adresse (falls eingerichtet):\n\n{webhook_url}",
         "data": {
-          "local_only": "Nur lokales Netzwerk"
+          "local_only": "Nur lokales Netzwerk",
+          "mode": "Betriebsmodus"
         },
         "data_description": {
           "local_only": "Die App nur aus dem Heimnetz (oder per VPN) akzeptieren. Ausschalten, um über Ihre HTTPS-Adresse aus dem Internet zu empfangen."
         }
+      },
+      "azure": {
+        "title": "Azure-Synchronisierung",
+        "description": "Vollständige HTTPS-API-Adresse und Lesetoken eingeben. Die Fahrzeugpartition ist normalerweise default. Der Fahrzeugname kommt aus der App. Lesetoken leer lassen, um den gespeicherten Token zu behalten.",
+        "data": {
+          "api_url": "Azure API-Adresse",
+          "read_token": "Lesetoken",
+          "vehicle": "Fahrzeugpartition",
+          "scan_interval": "Abfrageintervall (Sekunden)"
+        },
+        "data_description": {
+          "read_token": "Nur den Lesetoken verwenden, nicht den Schreibtoken."
+        }
       }
+    },
+    "error": {
+      "invalid_url": "Eine HTTPS-API-Adresse ohne Zugangsdaten oder Query-Parameter eingeben.",
+      "invalid_auth": "Lesetoken ungültig oder vom Server abgewiesen.",
+      "cannot_connect": "API nicht erreichbar oder Antwort ungültig."
     }
   },
   "entity": {

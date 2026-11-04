@@ -1,8 +1,7 @@
 """The DrivePulse integration: sensors and trip events from the DrivePulse app.
 
-The app POSTs JSON to a webhook of this Home Assistant (nothing leaves the
-house, no cloud, no account). This integration creates the webhook, one device
-per vehicle and the sensors, so no YAML is needed.
+Supports a direct local webhook or optional polling of a private Azure API.
+Both modes share the same vehicle, sensor and trip-event processing.
 """
 
 from __future__ import annotations
@@ -11,9 +10,11 @@ from homeassistant.components import webhook
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_WEBHOOK_ID, Platform
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 from homeassistant.helpers import device_registry as dr
 
-from .const import CONF_LOCAL_ONLY, DEFAULT_LOCAL_ONLY, DOMAIN
+from .azure import AzureAuthError, AzureError, AzureSync, client_for_entry
+from .const import CONF_LOCAL_ONLY, CONF_MODE, DEFAULT_LOCAL_ONLY, DOMAIN, MODE_AZURE
 from .hub import DrivePulseHub
 
 PLATFORMS = [Platform.SENSOR, Platform.BINARY_SENSOR]
@@ -25,13 +26,40 @@ async def async_setup_entry(hass: HomeAssistant, entry: DrivePulseConfigEntry) -
     """Register the webhook and create the entities."""
     hub = DrivePulseHub(hass, entry)
     await hub.async_load()
+    if entry.options.get(CONF_MODE, entry.data.get(CONF_MODE)) == MODE_AZURE:
+        client = client_for_entry(hass, entry)
+        scope = f"{client.url}|{client.vehicle}"
+        if hub.azure_scope != scope:
+            hub.azure_cursor = None
+            hub.azure_recent_ids.clear()
+            hub.azure_scope = scope
+        try:
+            await client.read(hub.azure_cursor, limit=1)
+        except AzureAuthError:
+            raise ConfigEntryAuthFailed("Azure read token rejected") from None
+        except AzureError:
+            raise ConfigEntryNotReady(
+                "Azure API temporarily unavailable or invalid"
+            ) from None
+        hub.azure_sync = AzureSync(hass, entry, hub, client)
     for vehicle in hub.vehicles.values():
         hub.ensure_device(vehicle)
     entry.runtime_data = hub
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
-    # Registered last: a message cannot arrive before the entities can take it.
+    if hub.azure_sync:
+        hub.azure_sync.start()
+    else:
+        _register_webhook(hass, entry, hub)
+    entry.async_on_unload(entry.add_update_listener(_async_options_updated))
+    return True
+
+
+def _register_webhook(
+    hass: HomeAssistant, entry: DrivePulseConfigEntry, hub: DrivePulseHub
+) -> None:
+    """Keep legacy webhook entries unchanged."""
     webhook.async_register(
         hass,
         DOMAIN,
@@ -44,8 +72,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: DrivePulseConfigEntry) -
     entry.async_on_unload(
         lambda: webhook.async_unregister(hass, entry.data[CONF_WEBHOOK_ID])
     )
-    entry.async_on_unload(entry.add_update_listener(_async_options_updated))
-    return True
 
 
 async def _async_options_updated(hass: HomeAssistant, entry: ConfigEntry) -> None:
@@ -55,6 +81,8 @@ async def _async_options_updated(hass: HomeAssistant, entry: ConfigEntry) -> Non
 
 async def async_unload_entry(hass: HomeAssistant, entry: DrivePulseConfigEntry) -> bool:
     """Save what is waiting, then unload."""
+    if entry.runtime_data.azure_sync:
+        await entry.runtime_data.azure_sync.stop()
     await entry.runtime_data.async_flush()
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 

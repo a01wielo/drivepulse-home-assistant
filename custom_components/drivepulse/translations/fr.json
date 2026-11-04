@@ -3,24 +3,81 @@
     "step": {
       "user": {
         "title": "Ajouter DrivePulse",
-        "description": "Cela crée une adresse privée (un webhook) à laquelle l'application DrivePulse envoie les données de votre voiture. Pas de compte, pas de cloud : les données restent dans votre Home Assistant. Sélectionnez Valider, puis collez l'adresse dans l'application."
+        "description": "Choose a direct webhook or Azure synchronization. Existing webhook entries remain supported.",
+        "data": {
+          "mode": "Connection mode"
+        }
+      },
+      "azure": {
+        "title": "Azure synchronization",
+        "description": "Enter the HTTPS API address and read token. The vehicle partition is normally default; vehicle names come from the app.",
+        "data": {
+          "api_url": "Azure API URL",
+          "read_token": "Read token",
+          "vehicle": "Vehicle partition",
+          "scan_interval": "Polling interval (seconds)"
+        },
+        "data_description": {
+          "read_token": "Use only the read token, not the write token."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Azure synchronization",
+        "description": "Enter the renewed read token.",
+        "data": {
+          "api_url": "Azure API URL",
+          "read_token": "Read token",
+          "vehicle": "Vehicle partition",
+          "scan_interval": "Polling interval (seconds)"
+        },
+        "data_description": {
+          "read_token": "Use only the read token, not the write token."
+        }
       }
     },
     "create_entry": {
-      "default": "DrivePulse est prêt. Dans l'application, ouvrez « Envoyer à Home Assistant », collez cette adresse dans « Adresse du webhook » et touchez « Tester l’envoi » :\n\n{webhook_url}\n\nHors de chez vous, utilisez l'adresse HTTPS de votre Home Assistant (par exemple Nabu Casa) ou un VPN, et désactivez « Réseau local uniquement » dans les options de l'intégration."
+      "default": "DrivePulse est prêt. Dans l'application, ouvrez « Envoyer à Home Assistant », collez cette adresse dans « Adresse du webhook » et touchez « Tester l’envoi » :\n\n{webhook_url}\n\nHors de chez vous, utilisez l'adresse HTTPS de votre Home Assistant (par exemple Nabu Casa) ou un VPN, et désactivez « Réseau local uniquement » dans les options de l'intégration.",
+      "azure": "Azure synchronization is configured. Home Assistant polls new data automatically. Keep the app pointed at Azure. A test event alone does not create a vehicle."
+    },
+    "error": {
+      "invalid_url": "Enter an HTTPS API address without credentials or query parameters.",
+      "invalid_auth": "The read token is invalid or rejected.",
+      "cannot_connect": "Cannot connect to the API or the response is invalid."
+    },
+    "abort": {
+      "reauth_successful": "Read token updated."
     }
   },
   "options": {
     "step": {
       "init": {
-        "description": "Adresse à coller dans l'application DrivePulse (« Envoyer à Home Assistant ») :\n\n{webhook_url}",
+        "description": "Select the connection mode. Direct webhook address (if configured):\n\n{webhook_url}",
         "data": {
-          "local_only": "Réseau local uniquement"
+          "local_only": "Réseau local uniquement",
+          "mode": "Connection mode"
         },
         "data_description": {
           "local_only": "N'accepter l'application que depuis votre réseau domestique (ou un VPN). Désactivez pour recevoir depuis internet via votre adresse HTTPS."
         }
+      },
+      "azure": {
+        "title": "Azure synchronization",
+        "description": "Enter the HTTPS API address and read token. The vehicle partition is normally default; vehicle names come from the app. Leave the read token blank to keep the stored token.",
+        "data": {
+          "api_url": "Azure API URL",
+          "read_token": "Read token",
+          "vehicle": "Vehicle partition",
+          "scan_interval": "Polling interval (seconds)"
+        },
+        "data_description": {
+          "read_token": "Use only the read token, not the write token."
+        }
       }
+    },
+    "error": {
+      "invalid_url": "Enter an HTTPS API address without credentials or query parameters.",
+      "invalid_auth": "The read token is invalid or rejected.",
+      "cannot_connect": "Cannot connect to the API or the response is invalid."
     }
   },
   "entity": {

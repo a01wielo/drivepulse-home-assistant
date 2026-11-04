@@ -3,24 +3,81 @@
     "step": {
       "user": {
         "title": "Přidat DrivePulse",
-        "description": "Vytvoří soukromou adresu (webhook), na kterou aplikace DrivePulse posílá data vašeho auta. Žádný účet, žádný cloud: data zůstávají ve vašem Home Assistantu. Vyberte Odeslat a vložte adresu do aplikace."
+        "description": "Choose a direct webhook or Azure synchronization. Existing webhook entries remain supported.",
+        "data": {
+          "mode": "Connection mode"
+        }
+      },
+      "azure": {
+        "title": "Azure synchronization",
+        "description": "Enter the HTTPS API address and read token. The vehicle partition is normally default; vehicle names come from the app.",
+        "data": {
+          "api_url": "Azure API URL",
+          "read_token": "Read token",
+          "vehicle": "Vehicle partition",
+          "scan_interval": "Polling interval (seconds)"
+        },
+        "data_description": {
+          "read_token": "Use only the read token, not the write token."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Azure synchronization",
+        "description": "Enter the renewed read token.",
+        "data": {
+          "api_url": "Azure API URL",
+          "read_token": "Read token",
+          "vehicle": "Vehicle partition",
+          "scan_interval": "Polling interval (seconds)"
+        },
+        "data_description": {
+          "read_token": "Use only the read token, not the write token."
+        }
       }
     },
     "create_entry": {
-      "default": "DrivePulse je připraven. V aplikaci otevřete „Odesílat do Home Assistant“, vložte tuto adresu do „Adresa webhooku“ a klepněte na „Zkušební odeslání“:\n\n{webhook_url}\n\nMimo domov použijte HTTPS adresu svého Home Assistantu (např. Nabu Casa) nebo VPN a v možnostech integrace vypněte „Jen místní síť“."
+      "default": "DrivePulse je připraven. V aplikaci otevřete „Odesílat do Home Assistant“, vložte tuto adresu do „Adresa webhooku“ a klepněte na „Zkušební odeslání“:\n\n{webhook_url}\n\nMimo domov použijte HTTPS adresu svého Home Assistantu (např. Nabu Casa) nebo VPN a v možnostech integrace vypněte „Jen místní síť“.",
+      "azure": "Azure synchronization is configured. Home Assistant polls new data automatically. Keep the app pointed at Azure. A test event alone does not create a vehicle."
+    },
+    "error": {
+      "invalid_url": "Enter an HTTPS API address without credentials or query parameters.",
+      "invalid_auth": "The read token is invalid or rejected.",
+      "cannot_connect": "Cannot connect to the API or the response is invalid."
+    },
+    "abort": {
+      "reauth_successful": "Read token updated."
     }
   },
   "options": {
     "step": {
       "init": {
-        "description": "Adresa k vložení do aplikace DrivePulse („Odesílat do Home Assistant“):\n\n{webhook_url}",
+        "description": "Select the connection mode. Direct webhook address (if configured):\n\n{webhook_url}",
         "data": {
-          "local_only": "Jen místní síť"
+          "local_only": "Jen místní síť",
+          "mode": "Connection mode"
         },
         "data_description": {
           "local_only": "Přijímat aplikaci jen z domovské sítě (nebo přes VPN). Vypněte pro příjem z internetu přes vaši HTTPS adresu."
         }
+      },
+      "azure": {
+        "title": "Azure synchronization",
+        "description": "Enter the HTTPS API address and read token. The vehicle partition is normally default; vehicle names come from the app. Leave the read token blank to keep the stored token.",
+        "data": {
+          "api_url": "Azure API URL",
+          "read_token": "Read token",
+          "vehicle": "Vehicle partition",
+          "scan_interval": "Polling interval (seconds)"
+        },
+        "data_description": {
+          "read_token": "Use only the read token, not the write token."
+        }
       }
+    },
+    "error": {
+      "invalid_url": "Enter an HTTPS API address without credentials or query parameters.",
+      "invalid_auth": "The read token is invalid or rejected.",
+      "cannot_connect": "Cannot connect to the API or the response is invalid."
     }
   },
   "entity": {

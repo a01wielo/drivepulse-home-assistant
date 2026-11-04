@@ -26,6 +26,9 @@ def auto_enable_custom_integrations(enable_custom_integrations: None) -> None:
 async def webhook_ready(hass: HomeAssistant) -> None:
     """The webhook integration is a dependency: set it up once."""
     assert await async_setup_component(hass, "webhook", {})
+    # Register config HTTP views before the first test client freezes its router.
+    assert await async_setup_component(hass, "config", {})
+    assert await async_setup_component(hass, "websocket_api", {})
 
 
 @pytest.fixture
