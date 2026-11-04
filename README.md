@@ -2,9 +2,11 @@
 
 Sensors and trip events from your car, sent by the DrivePulse app, with **no YAML to write**.
 
-[![Open your Home Assistant instance and show this repository in the Marketplace.](https://my.home-assistant.io/badges/marketplace_repository.svg)](https://my.home-assistant.io/redirect/marketplace_repository/?owner=davideguida0093&repository=drivepulse-home-assistant&category=integration)
+[![Open your Home Assistant instance and show this repository in the Marketplace.](https://my.home-assistant.io/badges/marketplace_repository.svg)](https://my.home-assistant.io/redirect/marketplace_repository/?owner=a01wielo&repository=drivepulse-home-assistant&category=integration)
 
-DrivePulse reads your car through an OBD2 adapter. This integration gives the app a private address (a webhook) in your Home Assistant, and turns what the app sends into a device per vehicle with its sensors. The app sends data only to your Home Assistant, and only if you turn sending on: no account, no cloud, no server of ours in the middle.
+This fork adds optional **Azure synchronization** while retaining the original direct webhook mode. DrivePulse can send to your own Azure backend; Home Assistant polls its read-only API and feeds the existing sensors and trip events. In direct mode, data goes straight to Home Assistant.
+
+**Azure setup and installation:** [AZURE.md](AZURE.md). Version 0.2.0b1 is a preview tested on Home Assistant Core 2026.10.2. Use this fork's preview release, not the upstream 0.1.2 package.
 
 > This integration replaces the YAML block the app's help page used to show. If you pasted that block into `configuration.yaml`, remove it before adding the integration, or you will have the same sensors twice.
 

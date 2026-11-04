@@ -1,14 +1,18 @@
 {
   "domain": "drivepulse",
   "name": "DrivePulse",
-  "codeowners": ["@davideguida0093"],
+  "codeowners": [
+    "@davideguida0093"
+  ],
   "config_flow": true,
-  "dependencies": ["webhook"],
-  "documentation": "https://github.com/davideguida0093/drivepulse-home-assistant",
+  "dependencies": [
+    "webhook"
+  ],
+  "documentation": "https://github.com/a01wielo/drivepulse-home-assistant",
   "integration_type": "service",
-  "iot_class": "local_push",
-  "issue_tracker": "https://github.com/davideguida0093/drivepulse-home-assistant/issues",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/a01wielo/drivepulse-home-assistant/issues",
   "requirements": [],
   "single_config_entry": true,
-  "version": "0.1.2"
+  "version": "0.2.0b1"
 }

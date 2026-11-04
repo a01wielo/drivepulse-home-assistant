@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import math
+from collections import deque
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
@@ -17,12 +18,14 @@ from homeassistant.helpers.storage import Store
 from homeassistant.util import slugify
 
 from .const import (
+    CONF_MODE,
     DEFAULT_VEHICLE_NAME,
     DOMAIN,
     EVENT_TRIP_END,
     EVENT_TRIP_START,
     KNOWN_MESSAGES,
     MAX_VEHICLES,
+    MODE_AZURE,
     MSG_TEST,
     MSG_TRIP_END,
     MSG_TRIP_START,
@@ -115,14 +118,17 @@ class Vehicle:
     adapter_connected: bool | None = None
     last_trip: dict[str, Any] | None = None
 
-    def as_dict(self) -> dict[str, Any]:
+    def as_dict(self, persist_live: bool = False) -> dict[str, Any]:
         """The part worth keeping across a restart: the sticky values only."""
         return {
             "name": self.name,
             "keys": sorted(self.keys),
-            "values": {k: v for k, v in self.values.items() if k in STICKY_KEYS},
+            "values": {
+                k: v for k, v in self.values.items() if persist_live or k in STICKY_KEYS
+            },
             "codes": self.codes,
             "in_trip": self.in_trip,
+            "adapter_connected": self.adapter_connected if persist_live else None,
             "last_trip": self.last_trip,
         }
 
@@ -136,6 +142,7 @@ class Vehicle:
             values=dict(data.get("values", {})),
             codes=data.get("codes"),
             in_trip=bool(data.get("in_trip", False)),
+            adapter_connected=data.get("adapter_connected"),
             last_trip=data.get("last_trip"),
         )
 
@@ -157,6 +164,10 @@ class DrivePulseHub:
         self.hass = hass
         self.entry = entry
         self.vehicles: dict[str, Vehicle] = {}
+        self.azure_cursor: str | None = None
+        self.azure_recent_ids: deque[str] = deque(maxlen=1000)
+        self.azure_scope: str | None = None
+        self.azure_sync = None
         self._store: Store[dict[str, Any]] = Store(
             hass, STORE_VERSION, f"{DOMAIN}.{entry.entry_id}"
         )
@@ -165,21 +176,32 @@ class DrivePulseHub:
 
     async def async_load(self) -> None:
         data = await self._store.async_load()
+        self.azure_cursor = (data or {}).get("azure_cursor")
+        self.azure_recent_ids.extend((data or {}).get("azure_recent_ids", []))
+        self.azure_scope = (data or {}).get("azure_scope")
         for item in (data or {}).get("vehicles", []):
             vehicle = Vehicle.from_dict(item)
             self.vehicles[vehicle.slug] = vehicle
 
     @callback
     def _async_save(self) -> None:
-        self._store.async_delay_save(
-            lambda: {"vehicles": [v.as_dict() for v in self.vehicles.values()]}, 2
-        )
+        self._store.async_delay_save(self._snapshot, 2)
 
     async def async_flush(self) -> None:
         """Write what is waiting to be saved (called on unload)."""
-        await self._store.async_save(
-            {"vehicles": [v.as_dict() for v in self.vehicles.values()]}
+        await self._store.async_save(self._snapshot())
+
+    def _snapshot(self) -> dict[str, Any]:
+        cloud = (
+            self.entry.options.get(CONF_MODE, self.entry.data.get(CONF_MODE))
+            == MODE_AZURE
         )
+        return {
+            "vehicles": [v.as_dict(persist_live=cloud) for v in self.vehicles.values()],
+            "azure_cursor": self.azure_cursor,
+            "azure_recent_ids": list(self.azure_recent_ids),
+            "azure_scope": self.azure_scope,
+        }
 
     async def async_remove_storage(self) -> None:
         await self._store.async_remove()
@@ -233,20 +255,26 @@ class DrivePulseHub:
         if not isinstance(payload, dict):
             return web.Response(status=400, text="expected a JSON object")
 
-        event = payload.get("event")
-        if event not in KNOWN_MESSAGES:
-            # A newer app may send events this version does not know: accept
-            # and ignore, so the app does not report a failure.
-            _LOGGER.debug("Ignoring unknown DrivePulse event %r", event)
-            return None
-        if event == MSG_TEST:
-            return None
+        try:
+            self.process_payload(payload)
+        except ValueError:
+            return web.Response(status=400, text="too many vehicles")
+        return None
 
+    @callback
+    def process_payload(self, payload: dict[str, Any]) -> None:
+        """Shared processing for both direct webhooks and Azure synchronization."""
+        event = payload.get("event")
+        if (
+            not isinstance(event, str)
+            or event not in KNOWN_MESSAGES
+            or event == MSG_TEST
+        ):
+            return
         vehicle = self._vehicle_for(payload)
         if vehicle is None:
-            return web.Response(status=400, text="too many vehicles")
+            raise ValueError("too many vehicles")
         self._apply(vehicle, event, payload)
-        return None
 
     def _vehicle_for(self, payload: dict[str, Any]) -> Vehicle | None:
         name = _text(payload.get("vehicle")) or DEFAULT_VEHICLE_NAME
